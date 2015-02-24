@@ -1,22 +1,17 @@
 package io.pivotal.kr.app_suite.tc.IngestionGateway.Controller;
 
 import io.pivotal.kr.app_suite.tc.IngestionGateway.Service.AsyncWriter;
+import io.pivotal.kr.app_suite.tc.IngestionGateway.Service.IngestManager;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +21,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 @RequestMapping("/ingest")
 public class Ingest {
+	
+	@Autowired
+	private IngestManager mgr;
+	
 	@PostConstruct
 	private void init() {
 		System.setProperty("HADOOP_USER_NAME", "gpadmin");
@@ -39,60 +38,18 @@ public class Ingest {
 		FileSystem fs = null;
 		
 		try {
-			Configuration conf = new Configuration();
-			conf.addResource("phd/hdfs-site.xml");
-			conf.addResource("phd/core-site.xml");
-			
-			fs = FileSystem.get(conf);
-			
-			String date = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
-			
-			Path dirPath = new Path(dir+"/"+date);
-			
-			String errDir = "";
-			try {
-				fs.mkdirs(dirPath);
-			} catch (IOException e) {
-				errDir = e.getMessage();
-			}
-			
-			if (fs.exists(dirPath) == false) {
-				res.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
-				
-				model.addAttribute("status", "Failed!! : Could not create hdfs: " + dirPath.getName() + ": " + errDir);
-				model.addAttribute("bytes", "0");
-				
-				return "ingestResult";
-			}
-			
-			String filename = InetAddress.getLocalHost().getHostName() + "_" + 
-							  Thread.currentThread().getId() + "_" +
-							  UUID.randomUUID().toString();
-			
-			Path file = new Path(dir+"/"+date+"/"+filename);
-			
-			OutputStream os = null;
-			String errFile = "";
-			try {
-				os = fs.create(file);
-			} catch (IOException e) {
-				errFile = e.getMessage();
-			}
-			
-			if (os == null || fs.exists(file) == false) {
-				res.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
-				
-				model.addAttribute("status", "Failed!! : Could not create hdfs: " + file.getName() + ": " + errFile);
-				model.addAttribute("bytes", "0");
-				
-				return "ingestResult";
-			}
-			
 			InputStream is = req.getInputStream();
 			
 			byte buf[] = new byte[1048576];
 			
-			AsyncWriter writer = new AsyncWriter(os);
+			AsyncWriter writer = mgr.getWriter(dir);
+			
+			if (writer == null) {
+				res.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+				model.addAttribute("status", "Server Capacity Full !!");
+				model.addAttribute("received", 0);
+				model.addAttribute("written", 0);
+			}
 			
 			Thread writerThread = new Thread(writer);
 			writerThread.start();
