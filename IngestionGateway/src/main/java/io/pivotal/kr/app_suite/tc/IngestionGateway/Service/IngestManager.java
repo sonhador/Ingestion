@@ -73,7 +73,7 @@ public class IngestManager {
 	}
 	
 	public OutputStream createFileOutputStream(String dir, String date, int idx) throws IOException {
-		String filename = InetAddress.getLocalHost().getHostName() + "_" + idx + "_" + getDateTime() + "_" + (rand.nextInt(1000) + 1000) % 1000;
+		String filename = InetAddress.getLocalHost().getHostName() + "_" + idx + "_" + getDateTime() + "_" + rand.nextInt(1000000) % 1000;
 		
 		Path file = new Path(dir+"/"+date+"/"+filename);
 		
