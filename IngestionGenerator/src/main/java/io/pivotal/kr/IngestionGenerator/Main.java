@@ -14,7 +14,11 @@ public class Main {
 	public static void main(String []args) throws InterruptedException, ExecutionException, IOException {
 		AsyncHttpClient client = new AsyncHttpClient();
 		
-		InputStream is = new FileInputStream(new File("/Users/jungm3/Documents/Dev/Data/data"));
+		File file = new File("/Users/jungm3/Documents/Dev/Data/data");
+		
+		InputStream is = new FileInputStream(file);
+		
+		long start = System.currentTimeMillis();
 		
 		Future<Response> post = client.preparePost("http://localhost:8080/IngestionGateway/ingest/hdfs/memory")
 									  .setRequestTimeout(-1)
@@ -23,8 +27,12 @@ public class Main {
 		
 		Response r = post.get();
 		
+		long end = System.currentTimeMillis();
+		
 		System.out.println(r.getResponseBody());
+		System.out.println("Took: " + (end - start)/1000 + " sec, Throughput: " + file.length() / ((end - start) / 1000) /1024/1024 + " MB/sec");
 		
 		client.close();
+		is.close();
 	}
 }
