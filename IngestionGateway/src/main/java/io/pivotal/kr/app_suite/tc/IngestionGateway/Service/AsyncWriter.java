@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 public class AsyncWriter implements Runnable {
-	private final int HDFS_WRITE_RETRIES = 10;
-	private final int ASYNC_WRITER_CAPACITY = 20;
+	private static final int HDFS_WRITE_RETRIES = 10;
+	private static final int ASYNC_WRITER_CAPACITY = 20;
 	private String hdfsErrorMsg = "";
 	private long totalBytesWritten = 0;
 	private long bytesWritten = 0;

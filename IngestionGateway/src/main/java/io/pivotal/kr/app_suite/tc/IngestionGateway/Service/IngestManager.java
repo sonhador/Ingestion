@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,15 +21,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class IngestManager {
-	private final int ASYNC_WRITERS = 5;
+	private static final int ASYNC_WRITERS = 5;
 	
 	private Map<String, List<AsyncWriter>> queue;
 	private Map<String, AtomicInteger> queueCounter;
 	
 	private Configuration hdfsConf;
 	private FileSystem hdfsFs;
-	
-	private Random rand;
 	
 	@PostConstruct
 	public void init() throws IOException {
@@ -42,8 +39,6 @@ public class IngestManager {
 		hdfsConf.addResource("phd/core-site.xml");
 		
 		hdfsFs = FileSystem.get(hdfsConf);
-		
-		rand = new Random();
 	}
 	
 	public int getHdfsBlockSize() {
@@ -73,7 +68,7 @@ public class IngestManager {
 	}
 	
 	public OutputStream createFileOutputStream(String dir, String date, int idx) throws IOException {
-		String filename = InetAddress.getLocalHost().getHostName() + "_" + idx + "_" + getDateTime() + "_" + rand.nextInt(1000000) % 1000;
+		String filename = InetAddress.getLocalHost().getHostName() + "_" + getDateTime() + "_" + idx;
 		
 		Path file = new Path(dir+"/"+date+"/"+filename);
 		
@@ -90,7 +85,7 @@ public class IngestManager {
 	}
 	
 	public String getDateTime() {
-		return new SimpleDateFormat("yyyyMMddHHmmss").format(Calendar.getInstance().getTime());
+		return new SimpleDateFormat("yyyyMMddHHmmss.SSS").format(Calendar.getInstance().getTime());
 	}
 	
 	private synchronized List<AsyncWriter> createWriters(String dir) {

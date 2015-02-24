@@ -10,7 +10,6 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 @RequestMapping("/ingest")
 public class Ingest {
+	private static final int BUF_SIZE = 1048576;
 	
 	@Autowired
 	private IngestManager mgr;
@@ -32,15 +32,13 @@ public class Ingest {
 	
 	@RequestMapping(value="/hdfs/{dir}", method=RequestMethod.POST)
 	public String ingestToHDFS(final HttpServletRequest req, 
-										 final HttpServletResponse res,
-										 final @PathVariable String dir,
-										 final Model model) {
-		FileSystem fs = null;
-		
+							   final HttpServletResponse res,
+							   final @PathVariable String dir,
+							   final Model model) {
 		try {
 			InputStream is = req.getInputStream();
 			
-			byte buf[] = new byte[1048576];
+			byte buf[] = new byte[BUF_SIZE];
 			
 			AsyncWriter writer = mgr.getWriter(dir);
 			
@@ -89,12 +87,6 @@ public class Ingest {
 			model.addAttribute("bytes", 0);
 			
 			return "ingestResult";
-		} finally {
-			if (fs != null) {
-				try {
-					fs.close();
-				} catch (IOException e) {}
-			}
 		}
 	}
 }
