@@ -8,12 +8,12 @@ saves into HDFS in multiple files, each in Block-size as specified in hdfs-site.
 
 Example Urls
 ----
-for ingest, http://localhost:8080/IngestionGateway/ingest/hdfs/memory</br>
+for ingest, http://localhost:8080/IngestionGateway/ingest/hdfs/memory<br />
 for egest,  http://localhost:8080/IngestionGateway/egest/hdfs/memory/20150225
 
 Usage
 ----
-for ingest, http://localhost:8080/IngestionGateway/ingest/hdfs/{some directory}</br>
+for ingest, http://localhost:8080/IngestionGateway/ingest/hdfs/{some directory}<br />
 for egest,  http://localhost:8080/IngestionGateway/egest/hdfs/{some directory}/{some date pattern}
 
 Build & Deploy
