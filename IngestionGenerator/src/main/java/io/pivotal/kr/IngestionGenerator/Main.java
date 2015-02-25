@@ -14,13 +14,27 @@ public class Main {
 	public static void main(String []args) throws InterruptedException, ExecutionException, IOException {
 		AsyncHttpClient client = new AsyncHttpClient();
 		
-		File file = new File("/Users/jungm3/Documents/Dev/Data/data");
+		if (args.length != 2) {
+			System.err.println("Correct Usage: <file_path> <http_path_to_upload_to>");
+			
+			System.exit(1);
+		}
+		
+		// ex> /Users/jungm3/Documents/Dev/Data/data
+		File file = new File(args[0]);
+		
+		if (file.exists() == false) {
+			System.err.println(args[0] + " seems not to exist !!");
+			
+			System.exit(2);
+		}
 		
 		InputStream is = new FileInputStream(file);
 		
 		long start = System.currentTimeMillis();
 		
-		Future<Response> post = client.preparePost("http://localhost:8080/IngestionGateway/ingest/hdfs/memory")
+		// ex> "http://localhost:8080/IngestionGateway/ingest/hdfs/memory"
+		Future<Response> post = client.preparePost(args[1])
 									  .setRequestTimeout(-1)
 									  .setBody(is)
 									  .execute();
