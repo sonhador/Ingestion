@@ -1,5 +1,7 @@
 package io.pivotal.kr.app_suite.tc.IngestionGateway.Service;
 
+import io.pivotal.kr.app_suite.tc.IngestionGateway.Controller.Ingest;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
@@ -111,7 +113,7 @@ public class AsyncWriter implements Runnable {
 					continue;
 				}
 
-				if (bytesWritten >= mgr.getHdfsBlockSize()) {
+				if (bytesWritten > mgr.getHdfsBlockSize() - Ingest.BUF_SIZE) {
 					int untilNextLine = buf.length;
 					for (untilNextLine -= 1; untilNextLine >= 0; untilNextLine--) {
 						if ((char)buf[untilNextLine] == '\n') {

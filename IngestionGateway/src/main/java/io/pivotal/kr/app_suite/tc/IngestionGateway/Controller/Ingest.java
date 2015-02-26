@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 @RequestMapping("/ingest")
 public class Ingest {
-	private static final int BUF_SIZE = 1048576;
+	public static final int BUF_SIZE = 1048576;
 	
 	@Autowired
 	private IngestManager mgr;
