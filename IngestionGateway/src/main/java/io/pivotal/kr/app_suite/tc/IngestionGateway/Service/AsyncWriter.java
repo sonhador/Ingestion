@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 public class AsyncWriter implements Runnable {
 	private static final int HDFS_WRITE_RETRIES = 10;
 	private static final int ASYNC_WRITER_CAPACITY = 20;
+	private static final int NEWLINE_FIND_ATTEMPTS_MAX = 3;
 	private String hdfsErrorMsg = "";
 	private long totalBytesWritten = 0;
 	private long bytesWritten = 0;
@@ -26,12 +27,30 @@ public class AsyncWriter implements Runnable {
 	private String dir;
 	private int idx;
 	
+	private boolean probablyIsByteData = false;
+	private int newLineFindAttempts = 0;
 	private boolean occupied = false;
 	
 	public AsyncWriter(IngestManager mgr, String dir, int idx) {
 		this.mgr = mgr;
 		this.dir = dir;
 		this.idx = idx;
+	}
+	
+	public void returnToPool() {
+		init();
+		occupied = false;
+	}
+	
+	private void init() {
+		hdfsErrorMsg = "";
+		totalBytesWritten = 0;
+		bytesWritten = 0;
+		isWriteSuccessful = true;
+		doConsumeRest = false;
+		stopConsuming = false;
+		probablyIsByteData = false;
+		newLineFindAttempts = 0;
 	}
 	
 	public boolean isOccupied() {
@@ -65,7 +84,7 @@ public class AsyncWriter implements Runnable {
 		return hdfsErrorMsg;
 	}
 	
-	public void add(byte []buf) {
+	public void add(byte []buf) throws Exception {
 		boolean retry = false;
 		do {
 			try {
@@ -73,10 +92,20 @@ public class AsyncWriter implements Runnable {
 				retry = false;
 			} catch (IllegalStateException fullAlert) {
 				retry = true;
+				
+				if (stopConsuming) {
+					hdfsErrorMsg = "Permanent Write Failure !!";
+					stopConsuming = true;
+					retry = false;
+					
+					throw new Exception(hdfsErrorMsg);
+				}
 			} catch (Exception e) {
 				hdfsErrorMsg = e.getMessage();
 				stopConsuming = true;
 				retry = false;
+				
+				throw new Exception(hdfsErrorMsg);
 			}
 		} while (retry);
 	}
@@ -113,7 +142,7 @@ public class AsyncWriter implements Runnable {
 					continue;
 				}
 
-				if (bytesWritten > mgr.getHdfsBlockSize() - Ingest.BUF_SIZE) {
+				if (probablyIsByteData == false && bytesWritten > mgr.getHdfsBlockSize() - Ingest.BUF_SIZE) {
 					int untilNextLine = buf.length;
 					for (untilNextLine -= 1; untilNextLine >= 0; untilNextLine--) {
 						if ((char)buf[untilNextLine] == '\n') {
@@ -131,6 +160,14 @@ public class AsyncWriter implements Runnable {
 						System.arraycopy(buf, untilNextLine, bufAfterNewLine, 0, buf.length - untilNextLine);
 						
 						buf = bufBeforeNewLine;
+						
+						newLineFindAttempts = 0;
+					} else {
+						newLineFindAttempts++;
+						
+						if (newLineFindAttempts > NEWLINE_FIND_ATTEMPTS_MAX) {
+							probablyIsByteData = true;
+						}
 					}
 				}
 				
@@ -182,8 +219,6 @@ public class AsyncWriter implements Runnable {
 			Logger.getLogger(this.getClass()).error(e.getMessage());
 			
 			isWriteSuccessful = false;
-		} finally {
-			occupied = false;
 		}
 	}
 }

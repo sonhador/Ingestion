@@ -35,7 +35,7 @@ public class AsyncReader implements Runnable {
 		return doConsumeRest;
 	}
 	
-	private void add(byte buf[]) {
+	private void add(byte buf[]) throws Exception {
 		boolean retry = false;
 		do {
 			try {
@@ -46,6 +46,8 @@ public class AsyncReader implements Runnable {
 			} catch (Exception e) {
 				hdfsErrorMsg = e.getMessage();
 				retry = false;
+				
+				throw new Exception(hdfsErrorMsg);
 			}
 		} while (retry);
 	}
@@ -61,7 +63,11 @@ public class AsyncReader implements Runnable {
 				
 				System.arraycopy(buf, 0, bufExact, 0, read);
 				
-				add(bufExact);
+				try {
+					add(bufExact);
+				} catch (Exception e) {
+					break;
+				}
 			}
 		} catch (IOException e) {
 			Logger.getLogger(this.getClass()).error(e.getMessage());

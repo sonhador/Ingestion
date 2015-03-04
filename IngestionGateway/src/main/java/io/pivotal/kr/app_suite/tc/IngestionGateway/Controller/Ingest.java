@@ -35,12 +35,14 @@ public class Ingest {
 							   final HttpServletResponse res,
 							   final @PathVariable String dir,
 							   final Model model) {
+		
+		AsyncWriter writer = null;
 		try {
 			InputStream is = req.getInputStream();
 			
 			byte buf[] = new byte[BUF_SIZE];
 			
-			AsyncWriter writer = mgr.getWriter(dir);
+			writer = mgr.getWriter(dir);
 			
 			if (writer == null) {
 				res.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
@@ -54,18 +56,27 @@ public class Ingest {
 			
 			int read;
 			long totalReads = 0;
+			boolean receivedAll = true;
 			while ((read = is.read(buf)) != -1) {
 				totalReads += read;
 				
 				byte bufExact[] = new byte[read];
 				System.arraycopy(buf, 0, bufExact, 0, read);
-				writer.add(bufExact);
+				
+				try {
+					writer.add(bufExact);
+				} catch (Exception e) {
+					receivedAll = false;
+					break;
+				}
 			}
 			
 			writer.consumeRest();
-			try {
-				writerThread.join();
-			} catch (InterruptedException e) {}
+			if (receivedAll) {
+				try {
+					writerThread.join();
+				} catch (InterruptedException e) {}
+			}
 			
 			if (writer.isWriteSuccessful()) {
 				res.setStatus(HttpServletResponse.SC_OK);
@@ -87,6 +98,10 @@ public class Ingest {
 			model.addAttribute("bytes", 0);
 			
 			return "ingestResult";
+		} finally {
+			if (writer != null) {
+				writer.returnToPool();
+			}
 		}
 	}
 }

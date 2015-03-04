@@ -85,11 +85,15 @@ public class EgestManager {
 				boolean stopConsuming = false;
 				
 				while (stopConsuming == false) {
-					byte buf[] = null;
-					
+					byte buf[] = null;					
+
 					try {
 						buf = reader.queue.poll(100, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException e) {}
+					
+					if (buf == null && reader.isReadSuccessful() == false) {
+						break;
+					}
 					
 					if (buf == null && reader.doConsumeRest()) {
 						stopConsuming = true;
