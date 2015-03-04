@@ -95,7 +95,6 @@ public class AsyncWriter implements Runnable {
 				
 				if (stopConsuming) {
 					hdfsErrorMsg = "Permanent Write Failure !!";
-					stopConsuming = true;
 					retry = false;
 					
 					throw new Exception(hdfsErrorMsg);
